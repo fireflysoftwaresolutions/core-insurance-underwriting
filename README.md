@@ -23,6 +23,8 @@ This is a **core** service. It owns its tables and exposes a reactive API. It do
 
 A submission follows an explicit status lifecycle. `RECEIVED` may become `IN_CLEARANCE`, `DECLINED`, or `WITHDRAWN`. `IN_CLEARANCE` may become `REFERRED`, `QUOTED`, `DECLINED`, or `WITHDRAWN`. `REFERRED` may return to `IN_CLEARANCE` or become `QUOTED`, `DECLINED`, or `WITHDRAWN`. `QUOTED` may become `BOUND`, `DECLINED`, or `WITHDRAWN`. `BOUND`, `DECLINED`, and `WITHDRAWN` stay on file. Only a `RECEIVED` submission can be removed. A submission that has left intake stays on file.
 
+The [quote foundation](docs/quote-foundation.md) adds immutable terms, local acceptance rules, canonical bytes, and an unregistered sandbox property calculator. It does not add quote routes, storage, or policy binding.
+
 ## What it does not own
 
 - The applicant record. partyId points at core-common-customer-mgmt.
