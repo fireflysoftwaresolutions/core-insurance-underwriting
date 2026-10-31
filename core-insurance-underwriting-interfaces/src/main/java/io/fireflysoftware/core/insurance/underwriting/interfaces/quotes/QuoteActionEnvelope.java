@@ -55,6 +55,17 @@ public record QuoteActionEnvelope(QuoteOfferScope scope, String ownerIssuer, Str
                 intent.offerVersion(), intent.expectedControlGeneration(), intent.actionId(), intent.intentDigest());
     }
 
+    public static QuoteActionEnvelope offer(String issuer, String subject, UUID offerId, QuoteOfferRequestIntent intent) {
+        Objects.requireNonNull(intent, "intent");
+        return new QuoteActionEnvelope(intent.scope(), issuer, subject, Operation.OFFER, offerId, 1, 0,
+                intent.actionId(), intent.intentDigest());
+    }
+
+    public boolean matchesOffer(QuoteOfferRequestIntent intent) {
+        return intent != null && operation == Operation.OFFER && offerVersion == 1 && expectedControlGeneration == 0
+                && scope.equals(intent.scope()) && actionId.equals(intent.actionId()) && intentDigest.equals(intent.intentDigest());
+    }
+
     public boolean matches(QuoteAcceptanceIntent intent) {
         return intent != null && operation == Operation.ACCEPT && scope.equals(intent.scope())
                 && offerId.equals(intent.offerId()) && offerVersion == intent.offerVersion()

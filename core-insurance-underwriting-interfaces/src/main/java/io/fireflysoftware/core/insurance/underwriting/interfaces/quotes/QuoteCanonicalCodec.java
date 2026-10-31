@@ -27,6 +27,10 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.time.LocalDate;
+import io.fireflysoftware.core.insurance.underwriting.interfaces.enums.InsuredObjectType;
+import io.fireflysoftware.core.insurance.underwriting.interfaces.enums.LineOfBusiness;
+import io.fireflysoftware.core.insurance.underwriting.interfaces.enums.SubmissionStatus;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HexFormat;
@@ -42,6 +46,8 @@ public final class QuoteCanonicalCodec {
     private static final String RECEIPT = "FIREFLY_INSURANCE_QUOTE_ACCEPT_RECEIPT_1";
     private static final String ACTION = "FIREFLY_INSURANCE_QUOTE_ACTION_1";
     private static final String RESULT = "FIREFLY_INSURANCE_QUOTE_RESULT_1";
+    private static final String OFFER_REQUEST = "FIREFLY_INSURANCE_QUOTE_OFFER_REQUEST_1";
+    private static final String RISK = "FIREFLY_INSURANCE_QUOTE_RISK_1";
     private static final int MAX_BYTES = 65536;
     private static final int MAX_FIELDS = 128;
     private static final int MAX_FIELD_BYTES = 32768;
@@ -195,6 +201,40 @@ public final class QuoteCanonicalCodec {
         var v = new QuoteResultEnvelope(readAction(encodeFields(f.subList(1, 14))), UUID.fromString(f.get(14)),
                 UUID.fromString(f.get(15)), f.get(16).isEmpty() ? null : UUID.fromString(f.get(16)), Instant.parse(f.get(17)), Long.parseLong(f.get(18)));
         exact(bytes, result(v)); return v;
+    }
+
+    public static byte[] offerRequest(QuoteOfferRequestIntent value) {
+        Objects.requireNonNull(value, "value");
+        var f = scoped(OFFER_REQUEST, value.scope());
+        f.addAll(List.of(value.actionId().toString(), value.coverageStart().toString(), value.coverageEnd().toString(),
+                value.expectedProductRevisionId().toString(), value.expectedProductDigest()));
+        return encodeFields(f);
+    }
+
+    public static QuoteOfferRequestIntent readOfferRequest(byte[] bytes) {
+        var f = domain(bytes, OFFER_REQUEST, 10);
+        var v = new QuoteOfferRequestIntent(scope(f, 1), UUID.fromString(f.get(5)), LocalDate.parse(f.get(6)),
+                LocalDate.parse(f.get(7)), UUID.fromString(f.get(8)), f.get(9));
+        exact(bytes, offerRequest(v)); return v;
+    }
+
+    public static byte[] risk(QuoteRiskSnapshot value) {
+        Objects.requireNonNull(value, "value");
+        var f = scoped(RISK, value.scope());
+        f.addAll(List.of(value.submissionStatus().name(), value.lineOfBusiness().name(), value.currency(),
+                value.riskId().toString(), value.riskSubmissionId().toString(), value.insuredObjectType().name(),
+                value.riskPartyId().toString(), value.valueId().toString(), value.valueSubmissionId().toString(),
+                Integer.toString(value.lineNumber()), value.declaredValue().toPlainString(), value.valueCurrency()));
+        return encodeFields(f);
+    }
+
+    public static QuoteRiskSnapshot readRisk(byte[] bytes) {
+        var f = domain(bytes, RISK, 17);
+        var v = new QuoteRiskSnapshot(scope(f, 1), SubmissionStatus.valueOf(f.get(5)), LineOfBusiness.valueOf(f.get(6)),
+                f.get(7), UUID.fromString(f.get(8)), UUID.fromString(f.get(9)), InsuredObjectType.valueOf(f.get(10)),
+                UUID.fromString(f.get(11)), UUID.fromString(f.get(12)), UUID.fromString(f.get(13)),
+                Integer.parseInt(f.get(14)), money(f.get(15)), f.get(16));
+        exact(bytes, risk(v)); return v;
     }
 
     private static ArrayList<String> scoped(String domain, QuoteOfferScope scope) {
