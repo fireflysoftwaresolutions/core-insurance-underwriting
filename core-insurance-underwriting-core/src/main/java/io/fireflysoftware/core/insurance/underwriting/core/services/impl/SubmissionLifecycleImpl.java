@@ -26,7 +26,7 @@ import java.util.Set;
 /**
  * Allowed moves for a submission. A received submission is the only status that can be removed.
  */
-final class SubmissionLifecycle {
+final class SubmissionLifecycleImpl {
 
     private static final Map<SubmissionStatus, Set<SubmissionStatus>> ALLOWED = Map.of(
             SubmissionStatus.RECEIVED, EnumSet.of(
@@ -41,7 +41,7 @@ final class SubmissionLifecycle {
                     SubmissionStatus.BOUND, SubmissionStatus.DECLINED, SubmissionStatus.WITHDRAWN)
     );
 
-    private SubmissionLifecycle() {
+    private SubmissionLifecycleImpl() {
     }
 
     static boolean canTransition(SubmissionStatus from, SubmissionStatus to) {
