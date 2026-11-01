@@ -25,14 +25,19 @@ class QuoteGovernedOpenApiSecurityContractTest {
                 .get().uri("/v3/api-docs").exchange().expectStatus().isOk().expectBody().returnResult().getResponseBody();
         assertThat(bytes).isNotNull();
         assertThat(bytes.length).isLessThanOrEqualTo(4*1024*1024);
-        var output=java.nio.file.Path.of(System.getProperty("quote.source.output"));
+        String supplied=System.getProperty("quote.source.output");
+        var output=supplied==null?java.nio.file.Path.of("target","quote-producer").toAbsolutePath():java.nio.file.Path.of(supplied);
+        if(supplied==null)java.nio.file.Files.createDirectories(output);
+        var options=supplied==null
+                ?new java.nio.file.OpenOption[]{java.nio.file.StandardOpenOption.CREATE,java.nio.file.StandardOpenOption.TRUNCATE_EXISTING}
+                :new java.nio.file.OpenOption[]{java.nio.file.StandardOpenOption.CREATE_NEW};
         assertThat(output.isAbsolute()).isTrue();
         var capture=output.resolve("producer-openapi-"+captures.incrementAndGet()+".json");
-        java.nio.file.Files.write(capture,bytes,java.nio.file.StandardOpenOption.CREATE_NEW);
+        java.nio.file.Files.write(capture,bytes,options);
         java.nio.file.Files.setPosixFilePermissions(capture,java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"));
         var digest=java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(bytes));
         var checksum=java.nio.file.Path.of(capture+".sha256");
-        java.nio.file.Files.writeString(checksum,digest+"\n",java.nio.file.StandardOpenOption.CREATE_NEW);
+        java.nio.file.Files.writeString(checksum,digest+"\n",options);
         java.nio.file.Files.setPosixFilePermissions(checksum,java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"));
         return new ObjectMapper().readTree(bytes);
     }

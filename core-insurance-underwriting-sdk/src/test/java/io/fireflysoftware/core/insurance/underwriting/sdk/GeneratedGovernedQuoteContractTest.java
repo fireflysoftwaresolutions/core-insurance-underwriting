@@ -30,7 +30,9 @@ class GeneratedGovernedQuoteContractTest {
     private static final ObjectMapper MAPPER=ApiClient.createDefaultMapper(null);
 
     @Test void officialInputMatchesOriginalProducerContract() throws Exception {
-        var original=new ObjectMapper().readTree(Path.of(System.getProperty("quote.source.output"),"producer-openapi-1.json").toFile());
+        String supplied=System.getProperty("quote.source.output");
+        var producer=supplied==null?Path.of("..","core-insurance-underwriting-web","target","quote-producer").toAbsolutePath():Path.of(supplied);
+        var original=new ObjectMapper().readTree(producer.resolve("producer-openapi-1.json").toFile());
         var selected=new ObjectMapper(new YAMLFactory()).readTree(Path.of("src/main/resources/openapi.yml").toFile());
         assertEquals(original.path("paths"),selected.path("paths"));
         assertEquals(original.path("components"),selected.path("components"));
