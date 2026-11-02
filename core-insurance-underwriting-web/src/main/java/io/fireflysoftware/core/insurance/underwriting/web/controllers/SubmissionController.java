@@ -56,6 +56,8 @@ import java.util.UUID;
 public class SubmissionController {
 
     private final SubmissionService submissionService;
+    private final org.springframework.beans.factory.ObjectProvider<io.fireflysoftware.core.insurance.underwriting.core.services.governance.StaffSubmissionReader> currentReads;
+    private final io.fireflysoftware.core.insurance.underwriting.core.mappers.SubmissionMapper submissionMapper;
 
     @PostMapping("/filter")
     @Operation(summary = "Filter submissions", description = "Retrieve a page of submissions matching the filter")
@@ -83,6 +85,7 @@ public class SubmissionController {
                 .map(created -> ResponseEntity.status(HttpStatus.CREATED).body(created));
     }
 
+    @io.swagger.v3.oas.annotations.security.SecurityRequirement(name = "governedQuoteBearer")
     @GetMapping("/{submissionId}")
     @Operation(summary = "Get Submission by id", description = "Retrieve one Submission")
     @ApiResponses({
@@ -92,8 +95,12 @@ public class SubmissionController {
     public Mono<ResponseEntity<SubmissionDTO>> getSubmissionById(
             @Parameter(description = "Unique identifier of the Submission", required = true)
             @PathVariable UUID submissionId) {
-        return submissionService.getSubmissionById(submissionId)
-                .map(ResponseEntity::ok);
+        var reader=currentReads.getIfAvailable();
+        if(reader==null)return Mono.error(new org.springframework.web.server.ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,"Current submission read is not configured"));
+        return reader.read(submissionId).map(submissionMapper::toDTO).map(ResponseEntity::ok)
+                .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()))
+                .onErrorMap(SecurityException.class, rejected -> new org.springframework.web.server.ResponseStatusException(
+                        HttpStatus.FORBIDDEN, "Current submission read authority required"));
     }
 
     @PutMapping("/{submissionId}")

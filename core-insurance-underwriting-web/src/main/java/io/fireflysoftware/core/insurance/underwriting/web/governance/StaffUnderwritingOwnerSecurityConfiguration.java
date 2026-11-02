@@ -32,7 +32,7 @@ import reactor.core.publisher.Mono;
 @ConditionalOnProperty(prefix="insurance.underwriting.governed",name={"enabled","runtime.enabled"},havingValue="true")
 public class StaffUnderwritingOwnerSecurityConfiguration{
     static final ServerWebExchangeMatcher PREFIX=ServerWebExchangeMatchers.pathMatchers("/api/v1/underwriting-governance/**");
-    static final ServerWebExchangeMatcher SUPPORTED=new OrServerWebExchangeMatcher(ServerWebExchangeMatchers.pathMatchers(HttpMethod.POST,"/api/v1/underwriting-governance/intents","/api/v1/underwriting-governance/actions"),ServerWebExchangeMatchers.pathMatchers(HttpMethod.GET,"/api/v1/underwriting-governance/actions/*"));
+    static final ServerWebExchangeMatcher SUPPORTED=new OrServerWebExchangeMatcher(ServerWebExchangeMatchers.pathMatchers(HttpMethod.POST,"/api/v1/underwriting-governance/intents","/api/v1/underwriting-governance/actions"),ServerWebExchangeMatchers.pathMatchers(HttpMethod.GET,"/api/v1/underwriting-governance/actions/*","/api/v1/submissions/*"));
     @Bean @Order(-60)
     WebFilter staffUnderwritingSupportedRoutes(){return(exchange,chain)->PREFIX.matches(exchange).flatMap(prefix->{if(!prefix.isMatch())return chain.filter(exchange);return SUPPORTED.matches(exchange).flatMap(supported->{if(supported.isMatch())return chain.filter(exchange);exchange.getResponse().setStatusCode(HttpStatus.NOT_FOUND);return exchange.getResponse().setComplete();});});}
     @Bean @Order(-55)
