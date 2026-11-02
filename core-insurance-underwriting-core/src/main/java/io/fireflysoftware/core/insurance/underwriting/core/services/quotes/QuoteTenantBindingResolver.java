@@ -1,7 +1,7 @@
 /* Copyright 2026 Firefly Software Foundation. Licensed under the Apache License, Version 2.0. */
 package io.fireflysoftware.core.insurance.underwriting.core.services.quotes;
 
-import io.fireflysoftware.core.insurance.underwriting.models.quotes.QuoteAuthorityBudget;
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.impl.QuoteAuthorityBudget;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;

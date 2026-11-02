@@ -62,7 +62,7 @@ class QuoteMappedContractTest {
         }
     }
     @Test void controlCasChangesExactlyFourColumnsAndChecksFullScopeVersionOwner() throws Exception {
-        io.fireflysoftware.core.insurance.underwriting.models.quotes.QuoteControlMappedCasTest.assertMappedScopeAndColumns();
+        io.fireflysoftware.core.insurance.underwriting.models.quotes.impl.QuoteControlMappedCasTest.assertMappedScopeAndColumns();
     }
     @Test void historyAndSourceChildQueriesAreBoundedAtRepositoryLevel() {
         assertTrue(Arrays.stream(QuoteRepositories.Controls.class.getMethods()).anyMatch(m->m.getName().startsWith("findFirst20By")));

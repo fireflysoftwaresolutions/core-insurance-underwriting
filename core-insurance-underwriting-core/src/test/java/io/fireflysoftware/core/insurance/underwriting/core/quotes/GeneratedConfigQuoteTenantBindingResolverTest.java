@@ -3,7 +3,7 @@ package io.fireflysoftware.core.insurance.underwriting.core.quotes;
 
 import io.fireflysoftware.core.insurance.underwriting.core.services.quotes.*;
 import io.fireflysoftware.core.insurance.underwriting.core.services.quotes.impl.GeneratedConfigQuoteTenantBindingResolverImpl;
-import io.fireflysoftware.core.insurance.underwriting.models.quotes.QuoteAuthorityBudget;
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.impl.QuoteAuthorityBudget;
 import java.net.URI;
 import java.time.*;
 import java.time.temporal.ChronoUnit;

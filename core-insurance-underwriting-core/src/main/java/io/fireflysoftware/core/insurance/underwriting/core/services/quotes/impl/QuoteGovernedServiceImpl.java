@@ -17,6 +17,9 @@
 
 package io.fireflysoftware.core.insurance.underwriting.core.services.quotes.impl;
 
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.impl.QuoteMappedStoreImpl;
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.impl.QuoteRetainedGraph;
+
 import io.fireflysoftware.core.insurance.underwriting.core.services.quotes.*;
 import io.fireflysoftware.core.insurance.underwriting.interfaces.quotes.*;
 import io.fireflysoftware.core.insurance.underwriting.models.quotes.*;
@@ -31,13 +34,13 @@ import reactor.core.publisher.Mono;
 public final class QuoteGovernedServiceImpl implements QuoteGovernedService {
     private record Configured(QuoteConfigurationPort.Observation value,QuoteNativeWindow window) {}
     private final QuoteAuthorityGate authority;
-    private final QuoteMappedStore store;
+    private final QuoteMappedStoreImpl store;
     private final QuoteConfigurationPort configurations;
     private final SandboxPropertyQuoteRating rating;
     private final Clock clock;
     private final LongSupplier nanos;
 
-    public QuoteGovernedServiceImpl(QuoteAuthorityGate authority,QuoteMappedStore store,QuoteConfigurationPort configurations,
+    public QuoteGovernedServiceImpl(QuoteAuthorityGate authority,QuoteMappedStoreImpl store,QuoteConfigurationPort configurations,
             SandboxPropertyQuoteRating rating,Clock clock,LongSupplier nanos) {
         this.authority=Objects.requireNonNull(authority);this.store=Objects.requireNonNull(store);this.configurations=Objects.requireNonNull(configurations);
         this.rating=Objects.requireNonNull(rating);this.clock=Objects.requireNonNull(clock);this.nanos=Objects.requireNonNull(nanos);
@@ -77,7 +80,7 @@ public final class QuoteGovernedServiceImpl implements QuoteGovernedService {
                         return authority.authorize(acceptRequest(intent,QuoteAuthorityGate.Phase.COMMIT,metadata))
                             .timeout(remaining(configured.window())).flatMap(committing->{
                                 authority.requireSameActor(prepared,committing);
-                                var prerequisite=new QuoteMappedStore.AcceptancePrerequisite(metadata,config.providerVersion(),config.ruleSetVersion());
+                                var prerequisite=new QuoteMappedStoreImpl.AcceptancePrerequisite(metadata,config.providerVersion(),config.ruleSetVersion());
                                 return protectWrite(committing,config,store.accept(admission(committing,config),intent,prerequisite,configured.window()));
                             });
                     });
@@ -106,7 +109,7 @@ public final class QuoteGovernedServiceImpl implements QuoteGovernedService {
     }
 
     private Mono<WriteOutcome> protectWrite(QuoteAuthorityGate.Permit permit,QuoteConfigurationPort.Observation config,
-            Mono<QuoteMappedStore.Observation<QuoteResultEnvelope>> writing) {
+            Mono<QuoteMappedStoreImpl.Observation<QuoteResultEnvelope>> writing) {
         UUID actionId=permit.request().actionId();
         return writing.flatMap(committed->
             configured(committed.value().action().scope(),config.revisionId(),config.productDigest(),committed.window())
@@ -114,7 +117,7 @@ public final class QuoteGovernedServiceImpl implements QuoteGovernedService {
                     if (!config.sameDefinition(current.value())) return Mono.error(unavailable());
                     return authority.project(permit,current.window(),()->new WriteOutcome(Status.COMMITTED,actionId,Optional.of(committed.value())));
                 }).onErrorResume(error->Mono.just(new WriteOutcome(Status.COMMITTED_RESPONSE_UNAVAILABLE,actionId,Optional.empty()))))
-            .onErrorResume(QuoteMappedStore.WriteFailure.class,error->{
+            .onErrorResume(QuoteMappedStoreImpl.WriteFailure.class,error->{
                 Status status=switch(error.completion()) {
                     case COMMITTED -> Status.COMMITTED_RESPONSE_UNAVAILABLE;
                     case ACTIVE,UNKNOWN -> Status.OUTCOME_UNKNOWN;

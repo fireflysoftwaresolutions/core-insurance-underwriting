@@ -20,7 +20,7 @@ package io.fireflysoftware.core.insurance.underwriting.core.services.quotes;
 import io.fireflysoftware.core.insurance.underwriting.interfaces.quotes.QuoteCanonicalCodec;
 import io.fireflysoftware.core.insurance.underwriting.models.quotes.QuoteAdmission;
 import io.fireflysoftware.core.insurance.underwriting.models.quotes.QuoteNativeWindow;
-import io.fireflysoftware.core.insurance.underwriting.models.quotes.QuoteAuthorityBudget;
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.impl.QuoteAuthorityBudget;
 import org.fireflyframework.security.api.domain.Decision;
 import org.fireflyframework.security.api.domain.SecurityPrincipal;
 import org.fireflyframework.security.spi.PolicyDecisionPort;

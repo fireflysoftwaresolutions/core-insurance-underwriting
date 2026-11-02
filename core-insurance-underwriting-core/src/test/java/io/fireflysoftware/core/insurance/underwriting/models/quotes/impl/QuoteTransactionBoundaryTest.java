@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package io.fireflysoftware.core.insurance.underwriting.models.quotes;
+package io.fireflysoftware.core.insurance.underwriting.models.quotes.impl;
+
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.*;
 
 import io.r2dbc.spi.*;
 import java.lang.reflect.*;
@@ -66,14 +68,14 @@ class QuoteTransactionBoundaryTest {
     static QuoteAdmission admission(long millis){
         var a=new QuoteAdmission(new UUID(0,1),QuoteAdmission.Mode.OFFER_PREPARE,new UUID(0,2),new UUID(0,3),new UUID(0,4),null,null,new UUID(0,5),"https://issuer.example","human",BASE.plusMillis(millis),BASE.plusMillis(millis),BASE.plusMillis(millis),"a".repeat(64));
         try {
-            var type=Class.forName("io.fireflysoftware.core.insurance.underwriting.models.quotes.QuoteAuthorityBudget");
+            var type=Class.forName("io.fireflysoftware.core.insurance.underwriting.models.quotes.impl.QuoteAuthorityBudget");
             var budget=type.getMethod("observe",Instant.class,Instant.class,long.class,Clock.class,LongSupplier.class).invoke(null,BASE,BASE.plusMillis(millis),0L,clock(),nanos());
             return (QuoteAdmission)QuoteAdmission.class.getMethod("withBudget",type).invoke(a,budget);
         }catch(ClassNotFoundException missing){return a;}catch(ReflectiveOperationException error){throw new AssertionError(error);}
     }
-    static Mono<String> invoke(QuotePersistence p,QuoteAdmission a,Function<Object,Mono<String>> work){
+    static Mono<String> invoke(QuotePersistenceImpl p,QuoteAdmission a,Function<Object,Mono<String>> work){
         try {
-            var method=QuotePersistence.class.getDeclaredMethod("command",QuoteAdmission.class,QuoteNativeWindow.class,Function.class);
+            var method=QuotePersistenceImpl.class.getDeclaredMethod("command",QuoteAdmission.class,QuoteNativeWindow.class,Function.class);
             return (Mono<String>)method.invoke(p,a,null,work);
         }catch(NoSuchMethodException old){return p.command(()->work.apply(null));}catch(ReflectiveOperationException error){throw new AssertionError(error);}
     }
@@ -82,7 +84,7 @@ class QuoteTransactionBoundaryTest {
         try {budget.getClass().getMethod("observeNative",QuoteNativeWindow.class).invoke(budget,QuoteNativeWindow.from(BASE,BASE.toEpochMilli(),BASE.toEpochMilli()+millis,0));}
         catch(ReflectiveOperationException error){throw new AssertionError(error);}
     }
-    static QuotePersistence persistence(Driver d,GenericApplicationContext context){return new QuotePersistence(d,new Driver(),new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE).getConverter(),context);}
+    static QuotePersistenceImpl persistence(Driver d,GenericApplicationContext context){return new QuotePersistenceImpl(d,new Driver(),new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE).getConverter(),context);}
     static void uncertain(Throwable e){assertEquals("QuoteTransactionUncertain",e.getClass().getSimpleName());assertFalse(e.toString().contains("protected-value"));}
 
     @Test void acquisitionIsBoundedByOriginalAuthority(){
@@ -136,7 +138,7 @@ class QuoteTransactionBoundaryTest {
         }assertEquals(1,d.beginCancelled);assertEquals(1,d.closes);assertEquals(0,d.commits);
     }
     @Test void anotherFactoryIsNeitherAcquiredNorClosedByThisInvocation() {
-        var owned=new Driver();var foreign=new Driver();try(var context=new GenericApplicationContext()){context.refresh();var p=new QuotePersistence(owned,foreign,new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE).getConverter(),context);
+        var owned=new Driver();var foreign=new Driver();try(var context=new GenericApplicationContext()){context.refresh();var p=new QuotePersistenceImpl(owned,foreign,new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE).getConverter(),context);
             StepVerifier.withVirtualTime(()->invoke(p,admission(1000),b->p.readOperations().getDatabaseClient().sql("SELECT 1").fetch().rowsUpdated().map(v->"protected-value")))
                 .expectError().verify(Duration.ofSeconds(1));
         }assertEquals(1,owned.closes);assertEquals(0,foreign.creates);assertEquals(0,foreign.closes);

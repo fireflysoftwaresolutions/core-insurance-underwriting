@@ -2,7 +2,9 @@
  * Copyright 2026 Firefly Software Foundation
  * Licensed under the Apache License, Version 2.0 (the "License");
  */
-package io.fireflysoftware.core.insurance.underwriting.models.quotes;
+package io.fireflysoftware.core.insurance.underwriting.models.quotes.impl;
+
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.*;
 
 import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.ConnectionFactory;
@@ -59,7 +61,7 @@ class QuoteFrameworkAdoptionTest {
         var read = new QuoteTransactionBoundaryTest.Driver();
         try (var context = new GenericApplicationContext()) {
             context.refresh();
-            var persistence = new QuotePersistence(command, read,
+            var persistence = new QuotePersistenceImpl(command, read,
                     new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE).getConverter(), context);
             assertInstanceOf(OwnedLeaseConnectionFactory.class,
                     persistence.commandOperations().getDatabaseClient().getConnectionFactory());
@@ -113,7 +115,7 @@ class QuoteFrameworkAdoptionTest {
         };
         try (var context = new GenericApplicationContext()) {
             context.refresh();
-            var persistence = new QuotePersistence(closesAfterExpiry, new QuoteTransactionBoundaryTest.Driver(),
+            var persistence = new QuotePersistenceImpl(closesAfterExpiry, new QuoteTransactionBoundaryTest.Driver(),
                     new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE).getConverter(), context);
             StepVerifier.withVirtualTime(() -> {
                 var admission = QuoteTransactionBoundaryTest.admission(1000).withBudget(QuoteAuthorityBudget.observe(
@@ -121,7 +123,7 @@ class QuoteFrameworkAdoptionTest {
                         0, clock, nanos::get));
                 return QuoteTransactionBoundaryTest.invoke(persistence, admission, scope -> Mono.just("protected-value"));
             }).expectErrorSatisfies(error -> {
-                var uncertain = assertInstanceOf(QuotePersistence.QuoteTransactionUncertain.class, error);
+                var uncertain = assertInstanceOf(QuotePersistenceImpl.QuoteTransactionUncertain.class, error);
                 assertTrue(uncertain.commitKnown()); assertFalse(error.toString().contains("protected-value"));
             }).verify(Duration.ofSeconds(1));
         }
@@ -141,7 +143,7 @@ class QuoteFrameworkAdoptionTest {
                 return Mono.delay(Duration.ofMillis(20)).then(Mono.defer(() ->
                         persistence.command(admission, prior, scope -> Mono.just("protected-value"))));
             }).thenAwait(Duration.ofMillis(30))
-                    .expectError(QuotePersistence.QuoteTransactionUncertain.class).verify(Duration.ofSeconds(1));
+                    .expectError(QuotePersistenceImpl.QuoteTransactionUncertain.class).verify(Duration.ofSeconds(1));
         }
         assertEquals(0, driver.creates); assertEquals(0, driver.closes);
     }
@@ -160,7 +162,7 @@ class QuoteFrameworkAdoptionTest {
                                 });
                                 return Mono.just("protected-value");
                             }))).thenAwait(Duration.ofSeconds(5)).expectErrorSatisfies(error -> {
-                                var uncertain = assertInstanceOf(QuotePersistence.QuoteTransactionUncertain.class, error);
+                                var uncertain = assertInstanceOf(QuotePersistenceImpl.QuoteTransactionUncertain.class, error);
                                 assertTrue(uncertain.commitKnown());
                             }).verify(Duration.ofSeconds(1));
         }

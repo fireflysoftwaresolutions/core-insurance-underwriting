@@ -15,7 +15,9 @@
  */
 
 
-package io.fireflysoftware.core.insurance.underwriting.models.quotes;
+package io.fireflysoftware.core.insurance.underwriting.models.quotes.impl;
+
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.*;
 
 import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.ConnectionFactory;
@@ -127,7 +129,7 @@ public class QuoteControlMappedCasTest {
         assertEquals(2, backend.closed);
     }
 
-    private static Mono<Integer> accept(QuotePersistence.Session session, UUID tenant) {
+    private static Mono<Integer> accept(QuotePersistenceImpl.Session session, UUID tenant) {
         return session.controls.accept(tenant, PARTY, SUBMISSION, PRODUCT, OFFER,
                 "issuer", "subject", ACCEPTANCE, RECORDED);
     }
@@ -143,7 +145,7 @@ public class QuoteControlMappedCasTest {
 
         private Backend(Mono<Long> count) { this.count = count; }
 
-        private QuotePersistence.Session session() {
+        private QuotePersistenceImpl.Session session() {
             ConnectionFactory factory = new ConnectionFactory() {
                 @Override public Mono<? extends Connection> create() {
                     return Mono.fromSupplier(() -> {
@@ -160,7 +162,7 @@ public class QuoteControlMappedCasTest {
                 @Override public ConnectionFactoryMetadata getMetadata() { return () -> "PostgreSQL"; }
             };
             var strategy = new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE);
-            return new QuotePersistence.Session(factory, strategy.getConverter(), new StaticApplicationContext(), true);
+            return new QuotePersistenceImpl.Session(factory, strategy.getConverter(), new StaticApplicationContext(), true);
         }
 
         private Statement statement(String sql) {

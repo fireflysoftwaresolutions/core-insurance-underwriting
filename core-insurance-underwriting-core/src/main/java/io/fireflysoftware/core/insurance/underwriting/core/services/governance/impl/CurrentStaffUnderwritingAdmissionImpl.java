@@ -3,7 +3,7 @@ package io.fireflysoftware.core.insurance.underwriting.core.services.governance.
 import io.fireflysoftware.core.insurance.underwriting.core.services.governance.*;
 import io.fireflysoftware.core.insurance.underwriting.core.services.quotes.QuoteTenantBindingResolver;
 import io.fireflysoftware.core.insurance.underwriting.interfaces.governance.*;
-import io.fireflysoftware.core.insurance.underwriting.models.quotes.QuoteAuthorityBudget;
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.impl.QuoteAuthorityBudget;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;

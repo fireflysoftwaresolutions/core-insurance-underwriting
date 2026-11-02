@@ -15,7 +15,9 @@
  */
 
 
-package io.fireflysoftware.core.insurance.underwriting.models.quotes;
+package io.fireflysoftware.core.insurance.underwriting.models.quotes.impl;
+
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.*;
 
 import io.fireflysoftware.core.insurance.underwriting.interfaces.quotes.*;
 import java.time.Duration;

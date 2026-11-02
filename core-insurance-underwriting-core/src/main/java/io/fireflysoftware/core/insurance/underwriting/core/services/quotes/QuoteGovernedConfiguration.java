@@ -19,8 +19,8 @@ package io.fireflysoftware.core.insurance.underwriting.core.services.quotes;
 
 import io.fireflysoftware.core.insurance.underwriting.core.services.quotes.impl.QuoteGovernedServiceImpl;
 import io.fireflysoftware.core.insurance.underwriting.core.services.quotes.impl.SandboxPropertyQuoteRatingImpl;
-import io.fireflysoftware.core.insurance.underwriting.models.quotes.QuoteMappedStore;
-import io.fireflysoftware.core.insurance.underwriting.models.quotes.QuotePersistence;
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.impl.QuoteMappedStoreImpl;
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.impl.QuotePersistenceImpl;
 import io.r2dbc.pool.ConnectionPool;
 import io.r2dbc.pool.ConnectionPoolConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
@@ -54,8 +54,8 @@ public class QuoteGovernedConfiguration {
         var commands=pool(settings,true);ConnectionPool reads=null;
         try {
             reads=pool(settings,false);
-            var persistence=new QuotePersistence(commands,reads,converter,context);
-            var store=new QuoteMappedStore(persistence,clock,System::nanoTime,UUID::randomUUID);
+            var persistence=new QuotePersistenceImpl(commands,reads,converter,context);
+            var store=new QuoteMappedStoreImpl(persistence,clock,System::nanoTime,UUID::randomUUID);
             var authority=new QuoteAuthorityGate(security,pdp,settings.profile(),clock,System::nanoTime);
             var service=new QuoteGovernedServiceImpl(authority,store,configurations,new SandboxPropertyQuoteRatingImpl(),clock,System::nanoTime);
             return new Components(service,commands,reads);

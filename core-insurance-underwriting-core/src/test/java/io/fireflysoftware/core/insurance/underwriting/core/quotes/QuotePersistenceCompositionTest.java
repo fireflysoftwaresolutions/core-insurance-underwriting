@@ -17,7 +17,7 @@
 
 package io.fireflysoftware.core.insurance.underwriting.core.quotes;
 
-import io.fireflysoftware.core.insurance.underwriting.models.quotes.QuotePersistence;
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.impl.QuotePersistenceImpl;
 import io.r2dbc.spi.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.support.GenericApplicationContext;
@@ -35,7 +35,7 @@ class QuotePersistenceCompositionTest {
     @Test void templatesAndManagersShareExactlyTheirQualifiedFactory() {
         var commands=noConnect();var reads=noConnect();
         try(var context=new GenericApplicationContext()) {
-            context.refresh();var p=new QuotePersistence(commands,reads,new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE).getConverter(),context);
+            context.refresh();var p=new QuotePersistenceImpl(commands,reads,new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE).getConverter(),context);
             var commandFactory=p.commandOperations().getDatabaseClient().getConnectionFactory();
             var readFactory=p.readOperations().getDatabaseClient().getConnectionFactory();
             assertSame(commands,((org.springframework.r2dbc.connection.DelegatingConnectionFactory)commandFactory).getTargetConnectionFactory());
@@ -46,7 +46,7 @@ class QuotePersistenceCompositionTest {
     }
     @Test void explicitCommandRcAndEnforcedReadOnlyRrNeverRequireNew() {
         try(var context=new GenericApplicationContext()) {
-            context.refresh();var p=new QuotePersistence(noConnect(),noConnect(),new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE).getConverter(),context);
+            context.refresh();var p=new QuotePersistenceImpl(noConnect(),noConnect(),new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE).getConverter(),context);
             assertEquals(TransactionDefinition.ISOLATION_READ_COMMITTED,p.commandDefinition().getIsolationLevel());
             assertFalse(p.commandDefinition().isReadOnly());
             assertEquals(TransactionDefinition.ISOLATION_REPEATABLE_READ,p.readDefinition().getIsolationLevel());
@@ -58,12 +58,12 @@ class QuotePersistenceCompositionTest {
     }
     @Test void sameFactoryCannotServeBothRoles() {
         var cf=noConnect();try(var context=new GenericApplicationContext()) {
-            context.refresh();assertThrows(IllegalArgumentException.class,()->new QuotePersistence(cf,cf,new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE).getConverter(),context));
+            context.refresh();assertThrows(IllegalArgumentException.class,()->new QuotePersistenceImpl(cf,cf,new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE).getConverter(),context));
         }
     }
     @Test void callerCannotChangeRetainedTransactionDefinition() {
         try(var context=new GenericApplicationContext()) {
-            context.refresh();var p=new QuotePersistence(noConnect(),noConnect(),new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE).getConverter(),context);
+            context.refresh();var p=new QuotePersistenceImpl(noConnect(),noConnect(),new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE).getConverter(),context);
             p.commandDefinition().setIsolationLevel(TransactionDefinition.ISOLATION_READ_UNCOMMITTED);
             assertEquals(TransactionDefinition.ISOLATION_READ_COMMITTED,p.commandDefinition().getIsolationLevel());
         }

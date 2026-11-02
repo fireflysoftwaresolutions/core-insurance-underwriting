@@ -5,7 +5,7 @@ import io.fireflysoftware.common.config.sdk.api.TenantResourceBindingCurrentApi;
 import io.fireflysoftware.common.config.sdk.invoker.ApiClient;
 import io.fireflysoftware.common.config.sdk.model.TenantResourceBindingCurrent;
 import io.fireflysoftware.core.insurance.underwriting.core.services.quotes.QuoteTenantBindingResolver;
-import io.fireflysoftware.core.insurance.underwriting.models.quotes.QuoteAuthorityBudget;
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.impl.QuoteAuthorityBudget;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.*;

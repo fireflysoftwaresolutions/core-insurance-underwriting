@@ -15,7 +15,9 @@
  */
 
 
-package io.fireflysoftware.core.insurance.underwriting.models.quotes;
+package io.fireflysoftware.core.insurance.underwriting.models.quotes.impl;
+
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.QuoteNativeWindow;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -42,7 +44,7 @@ public final class QuoteAuthorityBudget {
     }
     public Duration remaining(Instant additionalUntil) {
         Instant cap=until.isBefore(additionalUntil)?until:additionalUntil;Instant now=clock.instant();long elapsed=nanos.getAsLong()-beforeNanos;
-        if (!now.isBefore(cap) || elapsed<0 || elapsed>=budgetNanos) throw new QuotePersistence.QuoteTransactionUncertain(false);
+        if (!now.isBefore(cap) || elapsed<0 || elapsed>=budgetNanos) throw new QuotePersistenceImpl.QuoteTransactionUncertain(false);
         var absolute=Duration.between(now,cap);var monotonic=Duration.ofNanos(budgetNanos-elapsed);return absolute.compareTo(monotonic)<0?absolute:monotonic;
     }
     Clock clock() {return clock;}
@@ -63,7 +65,7 @@ public final class QuoteAuthorityBudget {
             if (nativeWindow != null && nativeWindow.until().isBefore(expiresAt)) expiresAt = nativeWindow.until();
             return R2dbcOperationBudget.observed(now, expiresAt, before, Duration.ofSeconds(5), clock, nanos);
         } catch (RuntimeException expired) {
-            throw new QuotePersistence.QuoteTransactionUncertain(false);
+            throw new QuotePersistenceImpl.QuoteTransactionUncertain(false);
         }
     }
     @Override public String toString() {return "QuoteAuthorityBudget";}

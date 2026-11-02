@@ -15,7 +15,9 @@
  */
 
 
-package io.fireflysoftware.core.insurance.underwriting.models.quotes;
+package io.fireflysoftware.core.insurance.underwriting.models.quotes.impl;
+
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.*;
 
 import io.fireflysoftware.core.insurance.underwriting.interfaces.enums.*;
 import io.fireflysoftware.core.insurance.underwriting.interfaces.quotes.*;
@@ -33,7 +35,7 @@ import org.springframework.transaction.reactive.TransactionSynchronizationManage
 import reactor.core.publisher.Mono;
 
 /** Mapped local storage only; the service must independently enforce current authority before/after it. */
-public final class QuoteMappedStore {
+public final class QuoteMappedStoreImpl {
     public record Observation<T>(QuoteNativeWindow window,T value) {
         public Observation {Objects.requireNonNull(window);Objects.requireNonNull(value);}
         @Override public String toString() {return "QuoteStorageObservation";}
@@ -72,12 +74,12 @@ public final class QuoteMappedStore {
         }
         @Override public String toString() {return "QuoteAcceptancePrerequisite";}
     }
-    private final QuotePersistence persistence;
+    private final QuotePersistenceImpl persistence;
     private final Clock clock;
     private final LongSupplier nanos;
     private final Supplier<UUID> ids;
 
-    public QuoteMappedStore(QuotePersistence persistence,Clock clock,LongSupplier nanos,Supplier<UUID> ids) {
+    public QuoteMappedStoreImpl(QuotePersistenceImpl persistence,Clock clock,LongSupplier nanos,Supplier<UUID> ids) {
         this.persistence=Objects.requireNonNull(persistence);this.clock=Objects.requireNonNull(clock);
         this.nanos=Objects.requireNonNull(nanos);this.ids=Objects.requireNonNull(ids);
     }
@@ -186,7 +188,7 @@ public final class QuoteMappedStore {
                         a.tenantId(),a.partyId(),a.submissionId(),a.productId(),a.actionId(),a.issuer(),a.subject())
                     .flatMap(selected->{
                         if (!Objects.equals(selected.offerId(),open.stamp().offerId()) || !Objects.equals(selected.actionId(),a.actionId())) return Mono.error(invalid());
-                        return graph(s,a,selected.offerId()).map(graph->new RecoveryData(RecoveryState.FOUND,Optional.of(graph.resultFor(a.actionId(),expectedIntentDigest).orElseThrow(QuoteMappedStore::invalid))))
+                        return graph(s,a,selected.offerId()).map(graph->new RecoveryData(RecoveryState.FOUND,Optional.of(graph.resultFor(a.actionId(),expectedIntentDigest).orElseThrow(QuoteMappedStoreImpl::invalid))))
                             .onErrorResume(QuoteRetainedGraph.IntentConflict.class,error->Mono.just(new RecoveryData(RecoveryState.INTENT_CONFLICT,Optional.empty())));
                     }).switchIfEmpty(Mono.defer(()->open.stamp().offerId()==null?Mono.just(new RecoveryData(RecoveryState.NOT_OBSERVED_AT_THIS_READ,Optional.empty())):Mono.error(invalid())))
                     .flatMap(value->finish(s,a,open.window(),value));
@@ -194,7 +196,7 @@ public final class QuoteMappedStore {
         });
     }
 
-    private <T> Mono<Observation<T>> write(QuoteAdmission a,QuoteNativeWindow prior,java.util.function.Function<QuotePersistence.Invocation,Mono<Observation<T>>> work) {
+    private <T> Mono<Observation<T>> write(QuoteAdmission a,QuoteNativeWindow prior,java.util.function.Function<QuotePersistenceImpl.Invocation,Mono<Observation<T>>> work) {
         return Mono.defer(()->{
             var completion=new AtomicReference<>(Completion.NOT_STARTED);
             var window=new AtomicReference<QuoteNativeWindow>();
@@ -213,13 +215,13 @@ public final class QuoteMappedStore {
               .onErrorMap(error->{
                   if(error instanceof WriteFailure)return error;
                   Completion observed=completion.get();
-                  if(error instanceof QuotePersistence.QuoteTransactionUncertain timeout)observed=timeout.commitKnown()||observed==Completion.COMMITTED?Completion.COMMITTED:Completion.UNKNOWN;
+                  if(error instanceof QuotePersistenceImpl.QuoteTransactionUncertain timeout)observed=timeout.commitKnown()||observed==Completion.COMMITTED?Completion.COMMITTED:Completion.UNKNOWN;
                   return new WriteFailure(a.actionId(),observed,error);
               });
         });
     }
 
-    private Mono<Opened> openCommand(QuoteAdmission a,QuotePersistence.Invocation budget) {
+    private Mono<Opened> openCommand(QuoteAdmission a,QuotePersistenceImpl.Invocation budget) {
         return Mono.defer(()->{
             long before=nanos.getAsLong();var n=persistence.commands.nativeContext;
             return n.beginCommand(a.nonce(),a.mode().name(),a.tenantId(),a.submissionId(),a.partyId(),a.productId(),a.offerId(),a.actionId(),
@@ -228,7 +230,7 @@ public final class QuoteMappedStore {
                 .switchIfEmpty(Mono.error(invalid())).map(stamp->{var window=a.window(stamp,before);budget.observeNative(window);return new Opened(stamp,window);});
         });
     }
-    private Mono<Opened> openRead(QuoteAdmission a,QuotePersistence.Invocation budget) {
+    private Mono<Opened> openRead(QuoteAdmission a,QuotePersistenceImpl.Invocation budget) {
         return Mono.defer(()->{
             long before=nanos.getAsLong();
             return persistence.reads.nativeContext.beginRead(a.nonce(),a.mode().name(),a.tenantId(),a.submissionId(),a.partyId(),a.productId(),a.offerId(),a.actionId(),
@@ -236,7 +238,7 @@ public final class QuoteMappedStore {
                 .switchIfEmpty(Mono.error(invalid())).map(stamp->{var window=a.window(stamp,before);budget.observeNative(window);return new Opened(stamp,window);});
         });
     }
-    private <T> Mono<Observation<T>> finish(QuotePersistence.Session s,QuoteAdmission a,QuoteNativeWindow window,T value) {
+    private <T> Mono<Observation<T>> finish(QuotePersistenceImpl.Session s,QuoteAdmission a,QuoteNativeWindow window,T value) {
         return valid(s.nativeContext.contextCurrent(a.nonce())).then(Mono.fromSupplier(()->{
             window.requireLive(clock.instant(),nanos.getAsLong());return new Observation<>(window,value);
         }));
@@ -245,7 +247,7 @@ public final class QuoteMappedStore {
         return result.filter(Boolean.TRUE::equals).switchIfEmpty(Mono.error(invalid())).then();
     }
 
-    private Mono<QuoteRiskSnapshot> risk(QuotePersistence.Session s,QuoteAdmission a) {
+    private Mono<QuoteRiskSnapshot> risk(QuotePersistenceImpl.Session s,QuoteAdmission a) {
         return s.submissions.findBySubmissionId(a.submissionId()).switchIfEmpty(Mono.error(invalid())).flatMap(parent->{
             if (!Objects.equals(parent.submissionId(),a.submissionId()) || !Objects.equals(parent.tenantId(),a.tenantId()) || !Objects.equals(parent.partyId(),a.partyId()) || !Objects.equals(parent.productId(),a.productId())) return Mono.error(invalid());
             var source=new QuoteRiskSnapshot.Submission(a.scope(),SubmissionStatus.valueOf(parent.submissionStatus()),LineOfBusiness.valueOf(parent.lineOfBusiness()),parent.currency());
@@ -258,10 +260,10 @@ public final class QuoteMappedStore {
                 }));
         });
     }
-    private Mono<QuoteRetainedGraph> graph(QuotePersistence.Session s,QuoteAdmission a,UUID offerId) {
+    private Mono<QuoteRetainedGraph> graph(QuotePersistenceImpl.Session s,QuoteAdmission a,UUID offerId) {
         return s.controls.findByOfferId(offerId).switchIfEmpty(Mono.error(invalid())).flatMap(control->graph(s,a,control));
     }
-    private Mono<QuoteRetainedGraph> graph(QuotePersistence.Session s,QuoteAdmission a,QuoteRows.Control control) {
+    private Mono<QuoteRetainedGraph> graph(QuotePersistenceImpl.Session s,QuoteAdmission a,QuoteRows.Control control) {
         return s.versions.findByOfferId(control.offerId()).switchIfEmpty(Mono.error(invalid())).flatMap(version->
             s.actions.findFirst3ByOfferId(control.offerId()).collectList().flatMap(actions->{
                 if (control.acceptanceId()==null) return Mono.just(QuoteRetainedGraph.verify(a,control,version,actions,null));

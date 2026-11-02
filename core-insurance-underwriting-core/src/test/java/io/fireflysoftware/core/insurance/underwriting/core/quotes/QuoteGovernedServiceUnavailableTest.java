@@ -17,6 +17,9 @@
 
 package io.fireflysoftware.core.insurance.underwriting.core.quotes;
 
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.impl.QuoteMappedStoreImpl;
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.impl.QuotePersistenceImpl;
+
 import io.fireflysoftware.core.insurance.underwriting.core.services.quotes.*;
 import io.fireflysoftware.core.insurance.underwriting.core.services.quotes.impl.*;
 import io.fireflysoftware.core.insurance.underwriting.interfaces.quotes.*;
@@ -48,8 +51,8 @@ class QuoteGovernedServiceUnavailableTest {
                 Map.of("tenant_id",scope.tenantId().toString(),"party_id",scope.partyId().toString(),"principal_kind","HUMAN","exp",now.plusSeconds(60),"nbf",now.minusSeconds(1),"aud",List.of("core-quote"),"azp","domain-client"),now,null,Set.of(),Map.of());
         var gate=new QuoteAuthorityGate(()->Mono.just(p),(principal,a,r,c)->Mono.just(Decision.permit()),
                 new QuoteAuthorityGate.Profile("https://issuer.example","core-quote","tenant_id","azp","domain-client"),Clock.fixed(now,ZoneOffset.UTC),System::nanoTime);
-        var persistence=new QuotePersistence(absent(commandCalls),absent(readCalls),new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE).getConverter(),context);
-        var store=new QuoteMappedStore(persistence,Clock.fixed(now,ZoneOffset.UTC),System::nanoTime,UUID::randomUUID);
+        var persistence=new QuotePersistenceImpl(absent(commandCalls),absent(readCalls),new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE).getConverter(),context);
+        var store=new QuoteMappedStoreImpl(persistence,Clock.fixed(now,ZoneOffset.UTC),System::nanoTime,UUID::randomUUID);
         QuoteConfigurationPort configurations=(s,id,digest)->{configCalls.incrementAndGet();return Mono.error(new AssertionError("No configuration request may follow unavailable storage"));};
         return new QuoteGovernedServiceImpl(gate,store,configurations,new SandboxPropertyQuoteRatingImpl(),Clock.fixed(now,ZoneOffset.UTC),System::nanoTime);
     }

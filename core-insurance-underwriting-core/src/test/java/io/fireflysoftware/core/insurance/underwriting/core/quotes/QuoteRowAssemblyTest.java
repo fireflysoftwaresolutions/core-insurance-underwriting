@@ -17,6 +17,9 @@
 
 package io.fireflysoftware.core.insurance.underwriting.core.quotes;
 
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.impl.QuoteRetainedGraph;
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.impl.QuoteRowAssembly;
+
 import io.fireflysoftware.core.insurance.underwriting.models.quotes.*;
 import io.fireflysoftware.core.insurance.underwriting.interfaces.quotes.*;
 import io.fireflysoftware.core.insurance.underwriting.interfaces.enums.*;

@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package io.fireflysoftware.core.insurance.underwriting.models.quotes;
+package io.fireflysoftware.core.insurance.underwriting.models.quotes.impl;
+
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.*;
 
 import io.r2dbc.spi.ConnectionFactory;
 import java.time.Duration;
@@ -41,7 +43,6 @@ import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.data.r2dbc.dialect.PostgresDialect;
 import org.springframework.data.r2dbc.repository.support.R2dbcRepositoryFactory;
 import org.springframework.data.repository.core.support.RepositoryComposition.RepositoryFragments;
-import io.fireflysoftware.core.insurance.underwriting.models.quotes.impl.QuoteControlOperationsImpl;
 import org.springframework.r2dbc.connection.R2dbcTransactionManager;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.transaction.TransactionDefinition;
@@ -49,14 +50,14 @@ import org.springframework.transaction.support.DefaultTransactionDefinition;
 import reactor.core.publisher.Mono;
 
 /** Quote-specific authority and outcomes over the opt-in shared transaction capability. */
-public final class QuotePersistence {
+public final class QuotePersistenceImpl {
     private static final CleanupPolicy CLEANUP = new CleanupPolicy(Duration.ofSeconds(2), Duration.ofSeconds(2));
     final Session commands, reads;
     private final R2dbcTransactionManager commandManager, readManager;
     private final DefaultTransactionDefinition commandDefinition, readDefinition;
     private final BoundedRootTransaction commandTransaction, readTransaction;
 
-    public QuotePersistence(ConnectionFactory commands, ConnectionFactory reads,
+    public QuotePersistenceImpl(ConnectionFactory commands, ConnectionFactory reads,
             R2dbcConverter converter, ApplicationContext context) {
         Objects.requireNonNull(commands); Objects.requireNonNull(reads);
         Objects.requireNonNull(converter); Objects.requireNonNull(context);

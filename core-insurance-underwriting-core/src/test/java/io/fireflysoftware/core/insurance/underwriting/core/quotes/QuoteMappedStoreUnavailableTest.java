@@ -17,6 +17,11 @@
 
 package io.fireflysoftware.core.insurance.underwriting.core.quotes;
 
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.impl.QuoteAuthorityBudget;
+
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.impl.QuoteMappedStoreImpl;
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.impl.QuotePersistenceImpl;
+
 import io.fireflysoftware.core.insurance.underwriting.models.quotes.*;
 import io.r2dbc.spi.*;
 import java.time.*;
@@ -43,24 +48,24 @@ class QuoteMappedStoreUnavailableTest {
     };}
     @Test void missingWriteDatabaseDoesNotFabricateNativeSourceOrClock() {
         var calls=new AtomicInteger();try(var context=new GenericApplicationContext()) {
-            context.refresh();var p=new QuotePersistence(absent(calls),absent(new AtomicInteger()),new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE).getConverter(),context);
-            var store=new QuoteMappedStore(p,Clock.fixed(now,ZoneOffset.UTC),System::nanoTime,UUID::randomUUID);
+            context.refresh();var p=new QuotePersistenceImpl(absent(calls),absent(new AtomicInteger()),new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE).getConverter(),context);
+            var store=new QuoteMappedStoreImpl(p,Clock.fixed(now,ZoneOffset.UTC),System::nanoTime,UUID::randomUUID);
             assertThrows(RuntimeException.class,()->store.prepare(a(QuoteAdmission.Mode.OFFER_PREPARE)).block(Duration.ofSeconds(2)));
             assertEquals(1,calls.get());
         }
     }
     @Test void missingReadDatabaseNeverReturnsNotObservedOrRetainedData() {
         var calls=new AtomicInteger();try(var context=new GenericApplicationContext()) {
-            context.refresh();var p=new QuotePersistence(absent(new AtomicInteger()),absent(calls),new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE).getConverter(),context);
-            var store=new QuoteMappedStore(p,Clock.fixed(now,ZoneOffset.UTC),System::nanoTime,UUID::randomUUID);
+            context.refresh();var p=new QuotePersistenceImpl(absent(new AtomicInteger()),absent(calls),new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE).getConverter(),context);
+            var store=new QuoteMappedStoreImpl(p,Clock.fixed(now,ZoneOffset.UTC),System::nanoTime,UUID::randomUUID);
             assertThrows(RuntimeException.class,()->store.current(a(QuoteAdmission.Mode.READ)).block(Duration.ofSeconds(2)));
             assertEquals(1,calls.get());
         }
     }
     @Test void invalidModesRefuseBeforeConnectionAcquisition() {
         var calls=new AtomicInteger();try(var context=new GenericApplicationContext()) {
-            context.refresh();var p=new QuotePersistence(absent(calls),absent(calls),new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE).getConverter(),context);
-            var store=new QuoteMappedStore(p,Clock.fixed(now,ZoneOffset.UTC),System::nanoTime,UUID::randomUUID);
+            context.refresh();var p=new QuotePersistenceImpl(absent(calls),absent(calls),new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE).getConverter(),context);
+            var store=new QuoteMappedStoreImpl(p,Clock.fixed(now,ZoneOffset.UTC),System::nanoTime,UUID::randomUUID);
             assertThrows(IllegalArgumentException.class,()->store.prepare(a(QuoteAdmission.Mode.READ)).block(Duration.ofSeconds(2)));
             assertThrows(IllegalArgumentException.class,()->store.current(a(QuoteAdmission.Mode.OFFER)).block(Duration.ofSeconds(2)));
             assertThrows(IllegalArgumentException.class,()->store.history(a(QuoteAdmission.Mode.READ)).block(Duration.ofSeconds(2)));
@@ -69,8 +74,8 @@ class QuoteMappedStoreUnavailableTest {
     }
     @Test void missingRecoveryDatabaseDoesNotImplyNoEffect() {
         var calls=new AtomicInteger();try(var context=new GenericApplicationContext()) {
-            context.refresh();var p=new QuotePersistence(absent(new AtomicInteger()),absent(calls),new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE).getConverter(),context);
-            var store=new QuoteMappedStore(p,Clock.fixed(now,ZoneOffset.UTC),System::nanoTime,UUID::randomUUID);
+            context.refresh();var p=new QuotePersistenceImpl(absent(new AtomicInteger()),absent(calls),new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE).getConverter(),context);
+            var store=new QuoteMappedStoreImpl(p,Clock.fixed(now,ZoneOffset.UTC),System::nanoTime,UUID::randomUUID);
             assertThrows(RuntimeException.class,()->store.recover(a(QuoteAdmission.Mode.RECOVER),"b".repeat(64)).block(Duration.ofSeconds(2)));
             assertEquals(1,calls.get());
         }

@@ -17,6 +17,8 @@
 
 package io.fireflysoftware.core.insurance.underwriting.models.quotes;
 
+import io.fireflysoftware.core.insurance.underwriting.models.quotes.impl.QuoteAuthorityBudget;
+
 import io.fireflysoftware.core.insurance.underwriting.interfaces.quotes.QuoteOfferScope;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
