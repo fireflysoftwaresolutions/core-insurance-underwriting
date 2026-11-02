@@ -30,7 +30,8 @@ class QuoteMigrationDiscoveryTest {
     private static final String ORDINARY = "classpath:db/migration";
     private static final String OPTIONAL = "classpath:db/optional/insurance-quote";
     private static final String INSTALLER = "V4__Governed_Quote_Persistence.sql";
-    private static final String INSTALLER_SHA = "2b84d4c90b3f3074c8d3c5fb253f999d067f47cfb3f04d4faf4366687881cd5e";
+    private static final int FRESH_INSTALLER_FLYWAY_CHECKSUM = -1773760080;
+    private static final String FRESH_INSTALLER_SHA = "a49cb9b1a522d12d4c37a2b6ec45b9cf7e6904249669ae7efa5df4cd27361b15";
     private static final List<String> ORIGINAL = List.of("V1__Create_Enums.sql", "V2__Create_Tables.sql", "V3__Create_Casts.sql");
     @TempDir Path temporary;
 
@@ -80,10 +81,10 @@ class QuoteMigrationDiscoveryTest {
         assertNull(configuration.getDataSource());
         var parsed = new ResourceNameParser(configuration).parse(optional.getFirst().getFilename());
         assertEquals(org.flywaydb.core.api.MigrationVersion.fromVersion("4"), parsed.getVersion());
-        assertEquals(2022705259, ChecksumCalculator.calculate(optional.getFirst()));
+        assertEquals(FRESH_INSTALLER_FLYWAY_CHECKSUM, ChecksumCalculator.calculate(optional.getFirst()));
         try (var bytes = loader.getResourceAsStream("db/optional/insurance-quote/" + INSTALLER)) {
             assertNotNull(bytes);
-            assertEquals(INSTALLER_SHA, HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes.readAllBytes())));
+            assertEquals(FRESH_INSTALLER_SHA, HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes.readAllBytes())));
         }
     }
 

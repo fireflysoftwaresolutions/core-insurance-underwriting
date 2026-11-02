@@ -34,6 +34,12 @@ class GeneratedGovernedQuoteContractTest {
         var producer=supplied==null?Path.of("..","core-insurance-underwriting-web","target","quote-producer").toAbsolutePath():Path.of(supplied);
         var original=new ObjectMapper().readTree(producer.resolve("producer-openapi-1.json").toFile());
         var selected=new ObjectMapper(new YAMLFactory()).readTree(Path.of("src/main/resources/openapi.yml").toFile());
+        if(Boolean.getBoolean("owned.insurance.underwriting-sdk-boundary.enabled")||selected.path("paths").has("/api/v1/underwriting-governance/actions")){
+            var extended=new ObjectMapper().readTree(Path.of("..","core-insurance-underwriting-web","target","underwriting-staff-openapi.json").toFile());
+            original.path("paths").fields().forEachRemaining(entry->assertEquals(entry.getValue(),extended.path("paths").path(entry.getKey())));
+            original.path("components").fields().forEachRemaining(section->section.getValue().fields().forEachRemaining(entry->assertEquals(entry.getValue(),extended.path("components").path(section.getKey()).path(entry.getKey()))));
+            original=extended;
+        }
         assertEquals(original.path("paths"),selected.path("paths"));
         assertEquals(original.path("components"),selected.path("components"));
         assertEquals("bearer",selected.at("/components/securitySchemes/governedQuoteBearer/scheme").asText());

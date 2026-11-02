@@ -40,7 +40,7 @@ public final class QuoteAuthorityBudget {
         if (duration.isZero() || duration.isNegative() || duration.compareTo(Duration.ofSeconds(5))>0) throw new IllegalArgumentException("Finite original quote observation required");
         return new QuoteAuthorityBudget(until,beforeNanos,duration.toNanos(),clock,nanos);
     }
-    Duration remaining(Instant additionalUntil) {
+    public Duration remaining(Instant additionalUntil) {
         Instant cap=until.isBefore(additionalUntil)?until:additionalUntil;Instant now=clock.instant();long elapsed=nanos.getAsLong()-beforeNanos;
         if (!now.isBefore(cap) || elapsed<0 || elapsed>=budgetNanos) throw new QuotePersistence.QuoteTransactionUncertain(false);
         var absolute=Duration.between(now,cap);var monotonic=Duration.ofNanos(budgetNanos-elapsed);return absolute.compareTo(monotonic)<0?absolute:monotonic;

@@ -189,7 +189,7 @@ DECLARE expected_group TEXT; attributes RECORD;
 BEGIN
  expected_group:=CASE WHEN p_mode IN('OFFER_PREPARE','OFFER','ACCEPT') THEN 'quote_command' WHEN p_mode IN('READ','HISTORY','RECOVER') THEN 'quote_read' END;
  IF expected_group IS NULL OR current_user<>'quote_guard'
-  OR session_user IS DISTINCT FROM CASE WHEN expected_group='quote_command' THEN 'quote_command_runtime' ELSE 'quote_read_runtime' END
+  OR session_user IS DISTINCT FROM (CASE WHEN expected_group='quote_command' THEN 'quote_command_runtime' ELSE 'quote_read_runtime' END)
   OR current_setting('role') NOT IN('none',session_user::text) THEN RAISE EXCEPTION 'Exact quote runtime required' USING ERRCODE='42501'; END IF;
  SELECT * INTO attributes FROM pg_roles WHERE rolname=session_user;
  IF NOT FOUND OR attributes.rolsuper OR attributes.rolbypassrls OR attributes.rolcreaterole OR attributes.rolcreatedb OR attributes.rolreplication OR NOT attributes.rolcanlogin
