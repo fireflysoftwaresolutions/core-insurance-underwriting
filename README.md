@@ -287,6 +287,14 @@ Source tests check real Flyway resource discovery and original version/checksum 
 
 ## Build and run
 
+### Current STAFF submission read
+
+`GET /api/v1/submissions/{submissionId}` uses the dedicated current STAFF reader. Its exact scope is `insurance:underwriting:submissions:read`; its policy action is `insurance.underwriting.submission.read` with purpose `READ_SUBMISSION`, the exact tenant/submission resource, and `authorize` and `response` phases. It validates the current Configuration tenant binding and the original signed staff identity before acquiring the connection and before returning the result. It creates no action, intent, audit event, or business write. A currently authorized absent record returns 404; a current-authority refusal returns 403. Missing reader configuration returns 503.
+
+Enable `insurance.underwriting.governed.submission-read.enabled` together with the existing governed runtime. Explicitly supply `host`, `port`, `database`, `username`, `password`, and `ssl-mode` under that prefix through deployment configuration. The only permitted login is the separately provisioned `underwriting_submission_read`; it cannot reuse a writer or owner login. TLS defaults to `VERIFY_FULL`. `owned-loopback-fixture=true` permits `DISABLE` only for an explicitly owned literal `127.0.0.1` fixture.
+
+The database owner must separately provision that restricted login and schema usage, then review and execute `core-insurance-underwriting-models/src/main/resources/db/optional/insurance-underwriting-submission-read/Staff_Submission_Read_Prerequisite.sql`. This one-time prerequisite grants SELECT on the existing submission columns only and rejects existing table privileges or role memberships. It is outside automatic Flyway locations and must not be rerun or adopted over partial custody. The application uses Spring Data with an exact tenant and submission predicate inside a bounded read-only transaction; the database role has no business mutation grant.
+
 ```bash
 mvn clean verify
 mvn -pl core-insurance-underwriting-web spring-boot:run
