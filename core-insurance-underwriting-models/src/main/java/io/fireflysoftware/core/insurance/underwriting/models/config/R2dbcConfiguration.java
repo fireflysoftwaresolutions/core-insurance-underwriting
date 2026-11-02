@@ -17,6 +17,13 @@
 
 package io.fireflysoftware.core.insurance.underwriting.models.config;
 
+import io.fireflysoftware.core.insurance.underwriting.interfaces.enums.ReferralStatus;
+import io.fireflysoftware.core.insurance.underwriting.interfaces.enums.DecisionOutcome;
+import io.fireflysoftware.core.insurance.underwriting.models.config.impl.ReferralStatusWriteConverterImpl;
+import io.fireflysoftware.core.insurance.underwriting.models.config.impl.DecisionOutcomeWriteConverterImpl;
+import io.r2dbc.postgresql.codec.EnumCodec;
+import io.r2dbc.postgresql.extension.CodecRegistrar;
+import java.util.List;
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
 import io.r2dbc.postgresql.client.SSLMode;
@@ -63,7 +70,12 @@ public class R2dbcConfiguration extends AbstractR2dbcConfiguration {
                         .password(password)
                         .database(database)
                         .sslMode(SSLMode.valueOf(sslMode.toUpperCase()))
+                        .codecRegistrar(governanceEnumCodecs())
                         .build()
         );
     }
+    public static CodecRegistrar governanceEnumCodecs(){return EnumCodec.builder().withEnum("referral_status_enum",ReferralStatus.class).withEnum("decision_outcome_enum",DecisionOutcome.class).build();}
+    public static List<Object> governanceEnumConverters(){return List.of(new ReferralStatusWriteConverterImpl(),new DecisionOutcomeWriteConverterImpl());}
+    @Override protected List<Object> getCustomConverters(){return governanceEnumConverters();}
+
 }

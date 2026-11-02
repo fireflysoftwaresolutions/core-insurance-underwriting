@@ -15,13 +15,19 @@ Developed by the Firefly Software Foundation. [dev@fireflysoftware.io](mailto:de
 
 Core repository for underwriting submissions, evidence references, referrals, and decisions.
 
-Repository: [https://github.com/firefly-oss/core-insurance-underwriting](https://github.com/firefly-oss/core-insurance-underwriting)
+Repository: [https://github.com/fireflysoftwaresolutions/core-insurance-underwriting](https://github.com/fireflysoftwaresolutions/core-insurance-underwriting)
 
-Stores the underwriting file. It does not rate a risk and it does not decide authority. The applicant is a party, the product is a catalog id, and a bound decision may point at a policy id.
+Stores the underwriting file. Rating remains external; governed staff operations verify current delegation, source state, and independent maker/checker authority. The applicant is a party, the product is a catalog id, and a bound decision may point at a policy id.
 
-This is a **core** service. It owns its tables and exposes a reactive API. It does not call other core services. Domain orchestration is intentionally not in this repository.
+This is a **core** service. It owns its tables and exposes a reactive API. Domain owns cross-product business orchestration. The governed owner separately uses the generated Config SDK for current namespace-binding observations; those technical observations do not grant a financial or underwriting effect.
 
 A submission follows an explicit status lifecycle. `RECEIVED` may become `IN_CLEARANCE`, `DECLINED`, or `WITHDRAWN`. `IN_CLEARANCE` may become `REFERRED`, `QUOTED`, `DECLINED`, or `WITHDRAWN`. `REFERRED` may return to `IN_CLEARANCE` or become `QUOTED`, `DECLINED`, or `WITHDRAWN`. `QUOTED` may become `BOUND`, `DECLINED`, or `WITHDRAWN`. `BOUND`, `DECLINED`, and `WITHDRAWN` stay on file. Only a `RECEIVED` submission can be removed. A submission that has left intake stays on file.
+
+## Governed staff operations
+
+The default-off owner can prepare an original action, create a referral, approve it with a distinct delegated employee, record an unconditional ACCEPT decision, and recover the same action. Spring Data business effects, immutable operation receipts, and their canonical audit/outbox pair share one bounded transaction. Current signed staff authority and source/version checks remain mandatory on replay and recovery.
+
+The supported governed slice is a selected PROPERTY/USD risk with a positive insured value. Other decisions, conditions, currencies/products, multi-risk orchestration, and the complete policy lifecycle remain open. See [Governed staff runtime](docs/governed-staff-underwriting-runtime.md) for optional installation, explicit settings, generated contract and qualification boundaries. Source and generated SDK checks passed; signed original-service integration is not yet accepted.
 
 ## What it does not own
 
@@ -254,7 +260,30 @@ Swagger UI: `/swagger-ui.html`. OpenAPI: `/v3/api-docs`.
 | `SERVER_ADDRESS` | Bind address, default `localhost` |
 | `SERVER_PORT` | HTTP port, default `8080` |
 
-Create an empty database before the first start. Flyway applies `db/migration` on boot.
+For an ordinary deployment, create the database before the first start. The unchanged application Flyway defaults apply only V1–V3 from `classpath:db/migration`. The restricted governed quote installer is packaged separately at `db/optional/insurance-quote/V4__Governed_Quote_Persistence.sql`; quote feature flags do not install it.
+
+### Governed quote schema deployment
+
+Governed quote schema deployment is an explicit offline owner operation. Its separate restricted `quote_migrator` connection must satisfy the installer's existing protected-role, membership, legacy-table ownership and empty-schema checks. This repository does not bootstrap those privileges or supply runtime credentials for them. Run the owner migration step separately from application startup, using offline Flyway tooling with the model resources on its classpath.
+
+The separate schema-owner preparation must give the protected no-login `quote_guard` USAGE on its two owner schemas before V4/V5. As the actual `quote_owner` schema owner, execute `GRANT USAGE ON SCHEMA insurance_quote,insurance_quote_private TO quote_guard`. CREATE alone does not confer USAGE: the guard must resolve its governed view predicates and its own private helpers. This grants neither CREATE nor grant option and must not be extended to PUBLIC, application logins, `quote_command`, `quote_read` or `firefly_audit_writer`; runtime private-schema USAGE remains forbidden. The installer's temporary guard CREATE is still revoked before completion. Keep `quote_guard` NOLOGIN/NOINHERIT with no memberships; runtime identities never become it. This is an explicit offline provisioning prerequisite, not an application bootstrap or an upgrade of any installed V4.
+
+The owner validation/install mode must resolve **both** `classpath:db/migration` and `classpath:db/optional/insurance-quote`. Supply configuration through the operator's environment:
+
+| Offline setting | Required value |
+|-----------------|----------------|
+| `FLYWAY_LOCATIONS` | `classpath:db/migration,classpath:db/optional/insurance-quote` |
+| `FLYWAY_URL` | The separately verified existing target database |
+| `FLYWAY_USER` | The separately prepared restricted `quote_migrator` identity |
+| `FLYWAY_PASSWORD` | Its separately supplied secret, never the application's runtime password |
+| `FLYWAY_DEFAULT_SCHEMA`, `FLYWAY_TABLE` | The exact existing schema-history schema and table |
+| `FLYWAY_SCHEMAS` | The actual previously recorded managed schema set |
+
+Do not guess a default history schema/table, create another history timeline, or repair, baseline, reset, delete or ignore missing migrations. If V4 was already applied in a private environment, retain its existing history row and validate it with this combined-location owner mode. The original artifact keeps version `4`, filename `V4__Governed_Quote_Persistence.sql`, SHA-256 `2b84d4c90b3f3074c8d3c5fb253f999d067f47cfb3f04d4faf4366687881cd5e` and Flyway 12.4.0 checksum `2022705259`. Validate an applied original V4 only with that retained original artifact; the corrected fresh installer is not a history repair or an in-place upgrade. The fresh-empty-install variant has the same version/filename and only parentheses around the runtime-role CASE expression: SHA-256 `a49cb9b1a522d12d4c37a2b6ec45b9cf7e6904249669ae7efa5df4cd27361b15`, Flyway 12.4.0 checksum `-1773760080`. Its exact corrected checksum is pinned by both exploded and packaged-resource tests. Ordinary V1–V3 locations remain unchanged. An applied original checksum must fail validation against the corrected fresh bytes; do not repair/rebaseline/ignore that mismatch, rerun V4, adopt partial custody, or replace the history row. Existing installations require a separately reviewed explicit forward path. Do not reuse V4 for an unrelated future migration or rerun its body against an installed schema. Public source absence of V4 does not establish absence from a private database.
+
+After the separate owner installation/validation, a **governed deployment** must explicitly set `SPRING_FLYWAY_ENABLED=false` for application runtime. Otherwise its ordinary V1–V3-only automatic validation can reject an already applied V4; an earlier offline validation does not remove that mismatch. This deployment-specific setting does not change the ordinary application default and does not replace the owner step. Runtime continues to use its own `DB_USERNAME`/`DB_PASSWORD` and the dedicated command/read credentials; owner credentials must not be distributed to it. Governed quote and sandbox opt-ins remain independently default-off.
+
+Source tests check real Flyway resource discovery and original version/checksum identity, including packaged resources. They do not establish installed history, migration execution, PostgreSQL privileges, successful startup or an insurance journey.
 
 ## Build and run
 
@@ -285,3 +314,10 @@ Java 25, Spring Boot WebFlux, virtual threads, Spring Data R2DBC, PostgreSQL, Fl
 | Development contact | dev@fireflysoftware.io |
 | Platform | https://openplatform.fireflysoftware.io |
 | Website | https://fireflysoftware.io |
+
+
+### Mapped quote acceptance source checkpoint
+
+The default-off governed quote owner source has been recovered without changing its original canonical formats, actor/PDP admission, budgets, native guards, or migration bytes. Acceptance now uses an explicit Spring Data repository fragment bound to the same Session template. The original eleven compare-and-set predicates and exact-one affected-row check remain in place; no handwritten ordinary business UPDATE remains in that operation.
+
+Source qualification exercises the actual Spring Data Session factory, generated schema-qualified statement/bindings, affected counts and connection release using a controlled network-free R2DBC SPI. The retained quote/transaction suite remains covered. This does not establish physical PostgreSQL/RLS/ACL/rollback, original producer SDK, current insurance-purpose configuration wiring or positive policy binding. The public submission-intake/CRUD endpoints are not a governed priced-offer API. Genuine producer-facing offer/read/accept/recovery integration is a separate next block; the dedicated current Product purpose owner must be reused and its fixed-premium data must not be silently reinterpreted as sandbox rating settings.

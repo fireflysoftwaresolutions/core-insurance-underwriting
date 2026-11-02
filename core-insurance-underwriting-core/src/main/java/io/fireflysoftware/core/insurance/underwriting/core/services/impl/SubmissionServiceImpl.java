@@ -75,7 +75,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                     SubmissionStatus next = existing.getSubmissionStatus() != null
                             ? existing.getSubmissionStatus()
                             : current;
-                    if (!SubmissionLifecycle.canTransition(current, next)) {
+                    if (!SubmissionLifecycleImpl.canTransition(current, next)) {
                         return Mono.error(new IllegalStateException(
                                 "Submission " + submissionId + " cannot move from " + current + " to " + next));
                     }
